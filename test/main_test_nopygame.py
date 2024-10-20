@@ -49,6 +49,9 @@ Current Layer: {curr_layer + 1}
 Enter "w" to move to a layer above, and "s" to move to a layer below
 Enter in the format 'row, col, R' to reveal a cell 
 Enter in the format 'row, col, F' to flag a cell
+Enter x to rotate forwards
+Enter y to rotate sideways
+Enter z to turn the cube
 """)
         choice = input('Enter Choice Here: ')
 
@@ -68,6 +71,18 @@ Enter in the format 'row, col, F' to flag a cell
             else:
                 curr_layer += 1
 
+            continue
+
+        elif choice == 'x':
+            Minesweeper.rotate('x')
+            continue
+
+        elif choice == 'y':
+            Minesweeper.rotate('y')
+            continue
+        
+        elif choice == 'z':
+            Minesweeper.rotate('z')
             continue
 
         else:

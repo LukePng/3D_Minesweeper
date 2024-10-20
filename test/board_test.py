@@ -48,8 +48,6 @@ class Board:
                 placed_mines += 1
 
     def count_adjacent_mines(self):
-        
-
         for z in range(self._size):
             for y in range(self._size):
                 for x in range(self._size):
@@ -65,13 +63,50 @@ class Board:
 
                     self._board[z][y][x].adjacent_mines = mine_count
 
+    def rotate(self, orient):
+        temp_arr = [[[None for _ in range(self._size)] for _ in range(self._size)] for _ in range(self._size)]
+        if orient == 'x': # x-rotation aka front rotation, col is fixed
+            
+
+            for layer in range(self._size):
+                for col in range(self._size):
+                    for row in range(self._size):
+                        temp_arr[layer][row][col] = self._board[row][self._size - 1 - layer][col]
+
+        elif orient == 'y': # y-rotation aka side rotation
+            for layer in range(self._size):
+                for col in range(self._size):
+                    for row in range(self._size):
+                        temp_arr[layer][row][col] = self._board[col][row][self._size - 1 - layer]
+
+        else: # z-rotation aka face rotation
+
+            for layer in range(self._size):
+
+                # Performing Transpose
+                for i in range(self._size):
+                    for j in range(i + 1, self._size):
+                        self._board[layer][i][j], self._board[layer][j][i] = self._board[layer][j][i], self._board[layer][i][j]
+
+                #Reversing Columns
+                for i in range(self._size):
+                    for j in range(self._size//2):
+                        self._board[layer][i][j], self._board[layer][i][self._size - 1 - j] = self._board[layer][i][self._size - 1 - j], self._board[layer][i][j]
+
+            return
+        
+        for z in range(self._size):
+            for i in range(self._size):
+                for j in range(self._size):
+                    self._board[z][i][j] = temp_arr[z][i][j]
+
     def reveal_cell(self, z, y, x):
         if 0 <= z < self._size and 0 <= y < self._size and 0 <= x < self._size:
             cell = self._board[z][y][x]
             if not cell.is_revealed:
                 cell.reveal()
 
-    def display_complete_board(self):
+    def display_complete_board(self): # Top-down view
         for i in range(self._size):
             print(f"Layer {i}:")
             for j in range(self._size):
@@ -85,7 +120,7 @@ class Board:
                     print(display, end=' ')
                 print()  # New line for the next row
             print() 
-    
+
     def map_board(self):
         three_D_Board = self._board
         map_2d = {}
@@ -136,12 +171,6 @@ class Board:
                         if not self._board[nh][nr][nc].is_revealed:
                             queue.append((nh, nr, nc))
 
-            
-
-                
-
-
-
     def check_win(self):
         for h in range(self._size):
             for r in range(self._size):
@@ -163,6 +192,16 @@ class Board:
 # board = Board(size, num_mines)
 # board.gen_board()
 
+# board.display_complete_board()
+
+# print('-'*18)
+# board.rotate('x')
+# board.display_complete_board()
+# print('-'*18)
+# board.rotate('x')
+# board.display_complete_board()
+# print('-'*18)
+# board.rotate('x')
 # board.display_complete_board()
 
 # board.get_board()[1][1][1].reveal()
