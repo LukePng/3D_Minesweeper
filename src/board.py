@@ -33,6 +33,21 @@ class Board:
     
     def get_size(self):
         return self._size
+    
+    def get_num_mines(self):
+        return self._num_mines
+    
+    def get_num_flags(self):
+        cnt = 0
+        for z in range(self._size):
+            for y in range(self._size):
+                for x in range(self._size):
+                    if self._board[z][y][x].is_flagged:
+                        cnt += 1
+
+        return cnt
+
+
 
     def generate_mines(self):
         placed_mines = 0

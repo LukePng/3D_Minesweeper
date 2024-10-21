@@ -4,8 +4,8 @@ from button import Button
 import pygame
 import sys
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 800
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 700
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -14,12 +14,15 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
+SIDE_MARGIN = 50
+TOP_MARGIN = 200
+
 class Game:
     def __init__(self):
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("3D Minesweeper")
         self.difficulty = 0
-        self.selected_button = None  # Track which button is selected
+        self.selected_button = None
 
     def set_easy(self):
         self.difficulty = 0
@@ -72,9 +75,10 @@ class Game:
                                 for b in self.difficulty_buttons:
                                     b.reset_color()
                                 button.set_highlight(WHITE)  # Highlight the selected button
-                                button.action()  # Set the difficulty, but don't move to next page
+                                button.action()  # Set the difficulty
                             elif button.text == "Start Game":
                                 button.action()  # Start the game
+
     
     def initialize_board(self):
         if self.difficulty == 0:
@@ -89,53 +93,143 @@ class Game:
         self.board = Board(size, num_mines)  # Create a Board instance
         self.board.gen_board()  # Generate the board
 
-    def draw_board(self):
-        # Assuming each cell is represented by a rectangle on the screen
-        cell_size = SCREEN_WIDTH // self.board.get_size()  # Calculate size of each cell
-        for z in range(self.board.get_size()):
-            for y in range(self.board.get_size()):
-                for x in range(self.board.get_size()):
-                    cell = self.board.get_board()[z][y][x]
-                    # Set the color based on the cell state
-                    if cell.is_mine:
-                        color = RED if cell.is_revealed else BLACK  # Red for revealed mines
-                    elif cell.is_revealed:
-                        color = WHITE  # Revealed cells are white
-                    else:
-                        color = GREEN  # Unrevealed cells are green
+    def draw_board(self, layer=0):
+        board_size = self.board.get_size()
+        flags_left = self.board.get_num_mines() - self.board.get_num_flags()  # Calculate flags left
+        # Create a font object for drawing text
+        font = pygame.font.Font(None, 36)  # You can adjust the font size as needed
 
-                    # Draw the cell
-                    pygame.draw.rect(self.screen, color, (x * cell_size, y * cell_size, cell_size, cell_size))
-                    if cell.is_revealed and not cell.is_mine:
-                        # Draw the number of adjacent mines
-                        font = pygame.font.Font(None, 36)
-                        text_surface = font.render(str(cell.adjacent_mines), True, BLACK)
-                        self.screen.blit(text_surface, (x * cell_size + cell_size // 4, y * cell_size + cell_size // 4))
+        layer_text = font.render(f"Layer: {layer + 1}/{board_size}", True, WHITE)
+        flags_text = font.render(f"Flags left: {flags_left}", True, WHITE)
 
+        self.screen.blit(layer_text, (SIDE_MARGIN, 50))  # Position the layer text
+        self.screen.blit(flags_text, (SIDE_MARGIN, 100))  # Position the flags text
 
+        available_width = SCREEN_WIDTH - 2 * SIDE_MARGIN
+        available_height = SCREEN_HEIGHT - TOP_MARGIN - SIDE_MARGIN
+
+        cell_size = min(available_width // board_size, available_height // board_size)
+
+        left_margin = (SCREEN_WIDTH - cell_size * board_size) // 2
+        top_margin = TOP_MARGIN + (available_height - cell_size * board_size) // 2
+
+        for y in range(board_size):
+            for x in range(board_size):
+                cell = self.board.get_board()[layer][y][x]
+                if not cell.is_revealed:
+                    color = BLUE if cell.is_flagged else GREEN #flag is blue, unflagged and unrevealed is green
+                
+                elif cell.is_mine:
+                    color = RED #mine is red
+
+                else:
+                    color = WHITE #safe is whtie
+
+                # Calculate cell position
+                rect = pygame.Rect(
+                    left_margin + x * cell_size, 
+                    top_margin + y * cell_size, 
+                    cell_size, 
+                    cell_size
+                )
+                
+                pygame.draw.rect(self.screen, color, rect)
+                pygame.draw.rect(self.screen, WHITE, rect, 1)
+
+                if cell.is_revealed and not cell.is_mine:
+                    font = pygame.font.Font(None, 36)
+                    text_surface = font.render(str(cell.adjacent_mines), True, BLACK)
+                    self.screen.blit(text_surface, (
+                        left_margin + x * cell_size + cell_size // 4, 
+                        top_margin + y * cell_size + cell_size // 4
+                    ))
 
     def run_game(self):
-        print(f"Starting game at difficulty: {self.difficulty}")
-        # You can now proceed to your game logic here or move to the next screen
         self.initialize_board()  # Initialize the board
+        curr_layer = 0 #initialising first layer at 0
+        board_size = self.board.get_size()
+        game_over = False        
+
         running = True
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = pygame.mouse.get_pos()
-                    # Determine which cell was clicked
-                    x = mouse_pos[0] // (SCREEN_WIDTH // self.board.get_size())
-                    y = mouse_pos[1] // (SCREEN_HEIGHT // self.board.get_size())
-                    if 0 <= x < self.board.get_size() and 0 <= y < self.board.get_size():
-                        self.board.reveal_cell(0, y, x)  # Reveal the cell at (0, y, x) layer
+
+                if not game_over:
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        mouse_pos = pygame.mouse.get_pos()
+
+                        available_width = SCREEN_WIDTH - 2 * SIDE_MARGIN
+                        available_height = SCREEN_HEIGHT - TOP_MARGIN - SIDE_MARGIN
+                        cell_size = min(available_width // board_size, available_height // board_size)
+
+                        left_margin = (SCREEN_WIDTH - cell_size * board_size) // 2
+                        top_margin = TOP_MARGIN + (available_height - cell_size * board_size) // 2
+
+                        adjusted_mouse_x = mouse_pos[0] - left_margin
+                        adjusted_mouse_y = mouse_pos[1] - top_margin
+
+                        if 0 <= adjusted_mouse_x < cell_size * board_size and 0 <= adjusted_mouse_y < cell_size * board_size:
+                            # Determine which cell was clicked
+                            x = adjusted_mouse_x // cell_size
+                            y = adjusted_mouse_y // cell_size
+
+                            X, Y = int(x), int(y)
+
+                            if 0 <= x < board_size and 0 <= y < board_size:
+                                if event.button == 1:  # Left-click
+                                    if self.board.get_board()[curr_layer][Y][X].is_flagged:
+                                        continue # Cell cannot be clicked onto if flagged
+                                    else:
+                                        self.board.reveal_cell(curr_layer, Y, X)  # Reveal the cell
+
+                                        if (self.board.get_board()[curr_layer][Y][X].get_adj_mines() == 0) and (not self.board.get_board()[curr_layer][Y][X].is_mine):
+                                            self.board.clear_zeros(curr_layer, Y, X)
+
+                                        if self.board.check_lose(curr_layer, Y, X):
+                                            self.display_game_over_message("Game Over! You hit a mine.")
+                                            game_over = True
+
+
+                                        if self.board.check_win():
+                                            self.display_game_over_message("Congratulations! You won!")
+                                            game_over = True
+                                        
+
+
+                                elif event.button == 3:  # Right-click
+                                    self.board.get_board()[curr_layer][Y][X].flag()  # Flag the cell
+
+                    elif event.type == pygame.KEYDOWN:
+                        
+                        if event.key == pygame.K_UP:
+                            if curr_layer == 0:
+                                print("Already at the top!")
+                            else:
+                                curr_layer = curr_layer - 1
+
+                        elif event.key == pygame.K_DOWN:
+                            if curr_layer == (board_size - 1):
+                                print("Already at the bottom!")
+                            else:
+                                curr_layer = curr_layer + 1
                     
-            # Clear the screen
             self.screen.fill(BLACK)
-            # Draw the board
-            self.draw_board()
+            
+            self.draw_board(curr_layer)
             pygame.display.flip()
+
+
+    def display_game_over_message(self, message):
+        """ Display a game over or victory message on the screen """
+        font = pygame.font.Font(None, 74)
+        text_surface = font.render(message, True, RED)
+        self.screen.fill(BLACK)
+        self.screen.blit(text_surface, (SCREEN_WIDTH // 2 - text_surface.get_width() // 2, SCREEN_HEIGHT // 2))
+        pygame.display.flip()
+
+        pygame.time.wait(2000)  # Wait for 2 seconds before closing the game or restarting
 
 
     def run(self):
