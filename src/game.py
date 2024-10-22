@@ -1,6 +1,5 @@
 ### TO DO LIST ###
 # 1. GIVE UP button
-# 2. ADD rotation
 # 3. EXIT GAME button
 # 4. ADD MUSIC to game
 
@@ -151,16 +150,23 @@ class Game:
                 if cell.is_revealed and not cell.is_mine:
                     font = pygame.font.Font(None, 36)
                     text_surface = font.render(str(cell.adjacent_mines), True, BLACK)
-                    self.screen.blit(text_surface, (
-                        left_margin + x * cell_size + cell_size // 4, 
-                        top_margin + y * cell_size + cell_size // 4
-                    ))
+                    text_rect = text_surface.get_rect()
+                                    
+                    # Center the text in the cell
+                    text_rect.center = (
+                        left_margin + x * cell_size + cell_size // 2,
+                        top_margin + y * cell_size + cell_size // 2
+                     )
+                
+                    # Blit the text surface at the new centered position
+                    self.screen.blit(text_surface, text_rect)
 
     def run_game(self):
         self.initialize_board()  # Initialize the board
         curr_layer = 0 #initialising first layer at 0
         board_size = self.board.get_size()
-        game_over = False        
+        game_over = False
+        first_click = True      
 
         running = True
         while running:
@@ -194,6 +200,12 @@ class Game:
                                     if self.board.get_board()[curr_layer][Y][X].is_flagged:
                                         continue  # Cell cannot be clicked onto if flagged
                                     else:
+                                        if first_click:
+                                            while (self.board.get_board()[curr_layer][Y][X].get_adj_mines() != 0) or (self.board.get_board()[curr_layer][Y][X].is_mine):
+                                                self.initialize_board()
+                                            
+                                            first_click = False
+
                                         self.board.reveal_cell(curr_layer, Y, X)  # Reveal the cell
 
                                         if (self.board.get_board()[curr_layer][Y][X].get_adj_mines() == 0) and (not self.board.get_board()[curr_layer][Y][X].is_mine):
@@ -224,6 +236,30 @@ class Game:
                                 print("Already at the bottom!")
                             else:
                                 curr_layer = curr_layer + 1
+
+                        elif event.key == pygame.K_w:
+                            self.board.rotate('x')
+
+                        elif event.key == pygame.K_s:
+                            self.board.rotate('x')
+                            self.board.rotate('x')
+                            self.board.rotate('x')
+
+                        elif event.key == pygame.K_a:
+                            self.board.rotate('y')
+
+                        elif event.key == pygame.K_d:
+                            self.board.rotate('y')
+                            self.board.rotate('y')
+                            self.board.rotate('y')
+
+                        elif event.key == pygame.K_r:
+                            self.board.rotate('z')
+
+                        elif event.key == pygame.K_f:
+                            self.board.rotate('z')
+                            self.board.rotate('z')
+                            self.board.rotate('z')
 
                 else:  # Game is over; handle the end screen buttons
                     if event.type == pygame.MOUSEBUTTONDOWN:
