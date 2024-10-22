@@ -1,3 +1,12 @@
+### TO DO LIST ###
+# 1. GIVE UP button
+# 2. ADD rotation
+# 3. EXIT GAME button
+# 4. ADD MUSIC to game
+
+
+
+
 from board import Board
 from button import Button
 
@@ -105,6 +114,9 @@ class Game:
         self.screen.blit(layer_text, (SIDE_MARGIN, 50))  # Position the layer text
         self.screen.blit(flags_text, (SIDE_MARGIN, 100))  # Position the flags text
 
+        give_up_button = Button("Give Up", (SCREEN_WIDTH - SIDE_MARGIN, 10), RED, 30, action=self.give_up, border_color=WHITE, border_width=2)
+        give_up_button.draw(self.screen)
+
         available_width = SCREEN_WIDTH - 2 * SIDE_MARGIN
         available_height = SCREEN_HEIGHT - TOP_MARGIN - SIDE_MARGIN
 
@@ -180,29 +192,27 @@ class Game:
                             if 0 <= x < board_size and 0 <= y < board_size:
                                 if event.button == 1:  # Left-click
                                     if self.board.get_board()[curr_layer][Y][X].is_flagged:
-                                        continue # Cell cannot be clicked onto if flagged
+                                        continue  # Cell cannot be clicked onto if flagged
                                     else:
                                         self.board.reveal_cell(curr_layer, Y, X)  # Reveal the cell
 
                                         if (self.board.get_board()[curr_layer][Y][X].get_adj_mines() == 0) and (not self.board.get_board()[curr_layer][Y][X].is_mine):
                                             self.board.clear_zeros(curr_layer, Y, X)
 
+                                        # Check lose condition
                                         if self.board.check_lose(curr_layer, Y, X):
-                                            self.display_game_over_message("Game Over! You hit a mine.")
+                                            self.display_end_screen("Game Over! You hit a mine.", True)
                                             game_over = True
 
-
+                                        # Check win condition
                                         if self.board.check_win():
-                                            self.display_game_over_message("Congratulations! You won!")
+                                            self.display_end_screen("Congratulations! You won!", False)
                                             game_over = True
-                                        
-
 
                                 elif event.button == 3:  # Right-click
                                     self.board.get_board()[curr_layer][Y][X].flag()  # Flag the cell
 
                     elif event.type == pygame.KEYDOWN:
-                        
                         if event.key == pygame.K_UP:
                             if curr_layer == 0:
                                 print("Already at the top!")
@@ -214,22 +224,91 @@ class Game:
                                 print("Already at the bottom!")
                             else:
                                 curr_layer = curr_layer + 1
-                    
-            self.screen.fill(BLACK)
-            
-            self.draw_board(curr_layer)
-            pygame.display.flip()
+
+                else:  # Game is over; handle the end screen buttons
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        mouse_pos = pygame.mouse.get_pos()
+                        for button in self.end_buttons:
+                            if button.is_clicked(mouse_pos):
+                                if button.text == "New Puzzle":
+                                    self.start_screen()  # Go back to start screen
+                                    running = False  # End the current game loop
+                                elif button.text == "View Board":
+                                    self.display_complete_board()  # Show the complete board
+
+                self.screen.fill(BLACK)
+                if not game_over:
+                    self.draw_board(curr_layer)
+                pygame.display.flip()
+
+        pygame.quit()
+        sys.exit()
 
 
-    def display_game_over_message(self, message):
-        """ Display a game over or victory message on the screen """
+
+    def display_end_screen(self, message, is_loss):
+        """ Display the end screen with buttons for New Puzzle and View Board """
         font = pygame.font.Font(None, 74)
         text_surface = font.render(message, True, RED)
         self.screen.fill(BLACK)
-        self.screen.blit(text_surface, (SCREEN_WIDTH // 2 - text_surface.get_width() // 2, SCREEN_HEIGHT // 2))
-        pygame.display.flip()
+        self.screen.blit(text_surface, (SCREEN_WIDTH // 2 - text_surface.get_width() // 2, SCREEN_HEIGHT // 2 - 100))
 
-        pygame.time.wait(2000)  # Wait for 2 seconds before closing the game or restarting
+        # Create buttons for end screen
+        self.end_buttons = [
+            Button("New Puzzle", (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50), GREEN, 50, action=self.start_screen, border_color=WHITE, border_width=3),
+            Button("View Board", (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 150), BLUE, 50, action=self.show_board, border_color=WHITE, border_width=3)
+        ]
+
+        # Draw buttons
+        for button in self.end_buttons:
+            button.draw(self.screen)
+
+        pygame.display.flip()
+        # Wait for button actions
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    for button in self.end_buttons:
+                        if button.is_clicked(mouse_pos):
+                            button.action()  # Perform the action for the clicked button
+
+    def show_board(self):
+        self.board.display_complete_board()
+        curr_layer = 0
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_UP:
+                            if curr_layer == 0:
+                                print("Already at the top!")
+                            else:
+                                curr_layer = curr_layer - 1
+
+                        elif event.key == pygame.K_DOWN:
+                            if curr_layer == (self.board.get_size() - 1):
+                                print("Already at the bottom!")
+                            else:
+                                curr_layer = curr_layer + 1
+
+                self.screen.fill(BLACK)
+                self.draw_board(curr_layer)  # Optionally, you can pass a layer here
+                pygame.display.flip()
+
+    def give_up(self):
+        self.display_end_screen("You gave up. Better luck next time!", True)
+
+
 
 
     def run(self):

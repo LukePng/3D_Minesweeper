@@ -119,52 +119,12 @@ class Board:
             if not cell.is_revealed:
                 cell.reveal()
 
-    def display_complete_board(self): # Top-down view
+    def display_complete_board(self): # Reveals all the cells
         for i in range(self._size):
-            print(f"Layer {i}:")
             for j in range(self._size):
                 for k in range(self._size):
-                    cell = self._board[i][j][k]
-                    # Represent the cell in display
-                    if cell.is_mine:
-                        display = 'M'  # Mine
-                    else:
-                        display = cell.adjacent_mines
-                    print(display, end=' ')
-                print()  # New line for the next row
-            print() 
+                    self._board[i][j][k].reveal()
 
-    def map_board(self):
-        three_D_Board = self._board
-        map_2d = {}
-
-        for i in range(self._size):
-            map_2d[i] = three_D_Board[i]
-
-        return map_2d       
-
-    def display_map_board(self, curr_layer):
-        mapped = self.map_board()
-        curr_board_layer = mapped[curr_layer]
-        for r in range(self._size):
-            for c in range(self._size):
-                if curr_board_layer[r][c].get_is_revealed():
-                    if curr_board_layer[r][c].get_is_mine():
-                        display = "M"
-
-                    else:
-                        display = curr_board_layer[r][c].get_adj_mines()
-
-                elif curr_board_layer[r][c].get_is_flagged():
-                    display = 'F'
-
-                else:
-                    display = 'C'
-
-                print(display, end=' ')
-                
-            print() 
-    
     def clear_zeros(self, h, r, c):
         queue = deque([(h, r, c)])
         self._board[h][r][c].set_reveal(False)
