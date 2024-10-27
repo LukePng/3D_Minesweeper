@@ -1,6 +1,7 @@
 ### TO DO LIST ###
-# 1. GIVE UP button
-# 3. EXIT GAME button
+#1. Make it such that when mouse hovers over a clickable button it changes cursor
+#2. Add sprites to the game to make it look nicer
+
 
 from board import Board
 from button import Button
@@ -26,7 +27,7 @@ class Game:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("3D Minesweeper")
         self.difficulty = 0
-        self.selected_button = None
+        self.is_end = False
 
     #Miscellanous Functions
     def set_easy(self):
@@ -39,7 +40,11 @@ class Game:
         self.difficulty = 2
 
     def give_up(self):
-        self.display_end_screen("You gave up. Better luck next time!", True)
+        self.display_end_screen("You gave up. Better luck next time!")
+
+    def quit_game(self):
+        self.is_end = False
+        self.start_screen()
 
     def click_actions(self, event, board_size, curr_layer, first_click):
         mouse_pos = pygame.mouse.get_pos()
@@ -79,13 +84,13 @@ class Game:
 
                         # Check lose condition
                         if self.board.check_lose(curr_layer, Y, X):
-                            self.display_end_screen("Game Over! You hit a mine.", True)
-                            game_over = True
+                            self.display_end_screen("Game Over! You hit a mine.")
+                            self.is_end == True
 
                         # Check win condition
                         if self.board.check_win():
-                            self.display_end_screen("Congratulations! You won!", False)
-                            game_over = True
+                            self.display_end_screen("Congratulations! You won!", True)
+                            self.is_end == True
 
                 elif event.button == 3:  # Right-click
                     self.board.get_board()[curr_layer][Y][X].flag()  # Flag the cell
@@ -161,7 +166,7 @@ class Game:
                             elif button.text == "Start Game":
                                 button.action()  # Start the game
 
-    def display_end_screen(self, message, is_end):
+    def display_end_screen(self, message):
         #Display the end screen with buttons for New Puzzle and View Board
         font = pygame.font.Font(None, 74)
         text_surface = font.render(message, True, RED)
@@ -216,8 +221,13 @@ class Game:
                             else:
                                 curr_layer = curr_layer + 1
 
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.quit_button.is_clicked(pygame.mouse.get_pos()):
+                        self.quit_button.action()
+
                 self.screen.fill(BLACK)
-                self.draw_board(curr_layer)  # Optionally, you can pass a layer here
+                self.is_end = True
+                self.draw_board(curr_layer)
                 pygame.display.flip()
 
     #Generating Board
@@ -233,6 +243,7 @@ class Game:
             num_mines = 100 
         self.board = Board(size, num_mines)  # Create a Board instance
         self.board.gen_board()  # Generate the board
+        
 
     def draw_board(self, layer=0):
         board_size = self.board.get_size()
@@ -246,9 +257,11 @@ class Game:
         self.screen.blit(layer_text, (SIDE_MARGIN, 50))  # Position the layer text
         self.screen.blit(flags_text, (SIDE_MARGIN, 100))  # Position the flags text
 
-        give_up_button = Button("Give Up", (SCREEN_WIDTH - SIDE_MARGIN - 100, 50), RED, 30, action=self.give_up, border_color=WHITE, border_width=2)
+        self.quit_button.draw(self.screen)
 
-        give_up_button.draw(self.screen)
+        if not self.is_end:
+            self.give_up_button.draw(self.screen)
+        
 
         available_width = SCREEN_WIDTH - 2 * SIDE_MARGIN
         available_height = SCREEN_HEIGHT - TOP_MARGIN - SIDE_MARGIN
@@ -300,18 +313,27 @@ class Game:
         self.initialize_board()  # Initialize the board
         curr_layer = 0 #initialising first layer at 0
         board_size = self.board.get_size()
-        game_over = False
         first_click = True
         running = True
-        while running:
 
+        self.give_up_button = Button("Give Up", (SCREEN_WIDTH - SIDE_MARGIN - 100, 100), RED, 30, action=self.give_up, border_color=WHITE, border_width=1)
+        self.quit_button = Button("Quit Game", (SCREEN_WIDTH - SIDE_MARGIN - 100, 50), RED, 30, action=self.quit_game, border_color=WHITE, border_width=1)
+
+
+        while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
 
-                if not game_over:
+                if not self.is_end:
                     if event.type == pygame.MOUSEBUTTONDOWN:
-                        if event.button in [1, 2, 3]:
+                        if self.give_up_button.is_clicked(pygame.mouse.get_pos()):
+                            self.give_up_button.action()
+
+                        elif self.quit_button.is_clicked(pygame.mouse.get_pos()):
+                            self.quit_button.action()
+                            
+                        elif event.button in [1, 2, 3]:
                             self.click_actions(event, board_size, curr_layer, first_click)
                             first_click = False
 
@@ -355,7 +377,7 @@ class Game:
                                     self.display_complete_board()  # Show the complete board
 
                 self.screen.fill(BLACK)
-                if not game_over:
+                if not self.is_end:
                     self.draw_board(curr_layer)
                 pygame.display.flip()
 
@@ -367,9 +389,9 @@ class Game:
         pygame.init()
         pygame.font.init()
 
-        #pygame.mixer.init()  # Ensure mixer is initialized
-        #pygame.mixer.music.load('src/assets/music/bgm.mp3')  # Load the music file
-        #pygame.mixer.music.play(-1, 0.0)  # Loop indefinitely
+        pygame.mixer.init()  # Ensure mixer is initialized
+        pygame.mixer.music.load('src/assets/music/bgm.mp3')  # Load the music file
+        pygame.mixer.music.play(-1, 0.0)  # Loop indefinitely
 
         self.start_screen()
 

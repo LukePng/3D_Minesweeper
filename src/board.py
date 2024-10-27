@@ -113,6 +113,8 @@ class Board:
                 for j in range(self._size):
                     self._board[z][i][j] = temp_arr[z][i][j]
 
+        temp_arr = None #Clearing up memory
+
     def reveal_cell(self, z, y, x):
         if 0 <= z < self._size and 0 <= y < self._size and 0 <= x < self._size:
             cell = self._board[z][y][x]
