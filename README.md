@@ -13,6 +13,42 @@ TBC soon!
 1. Instead of having 8 sides for every tile, there is now up 26 sides that can possibly have a mine with every open square (or is it a cube)
 2. You can rotate the block and zoom into each layers, uncovering more and more mines as you do so!
 
+## Controls
+WASDRF keys to move the 3D cube to different orientation
+- W to flip forwards
+- A to flip leftwards
+- S to flip backwards
+- D to flip rightwards
+- R to turn rightwards
+- F to turn leftwards
+
+Arrow keys to switch between the layers of the 3D cube
+- Upper arrow key to move upwards
+- Lower arrow key to move downwards
+
+Clicking
+- Left click to reveal cell(s)
+- Right click to flag cell(s)
+
+
+
+## How To Access This Game?
+1. Download all the files inside the src folder / clone this repository
+2. Open up the src folder inside the command prompt
+3. Enter 'python3 main.py' in the command prompt
+
+
+## Requirements
+1. Install Python version 3.0 and beyond
+If python is not installed, refer to https://www.python.org/downloads/
+
+2. Ensure you have the pygame module
+If pygame module is missing, enter 'pip install pygame' inside your command prompt
+
+3. Have a computer!
+
+
+
 
 
 ## Future projects
