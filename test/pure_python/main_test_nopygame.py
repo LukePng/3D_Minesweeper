@@ -1,4 +1,4 @@
-from board_test import Board
+from test.pure_python.board_test import Board
 
 def create_board(difficulty):
     if difficulty == 0: #Easy

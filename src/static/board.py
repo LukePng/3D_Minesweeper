@@ -1,7 +1,7 @@
 import random
 from collections import deque
 
-from cell import Cell
+from static.cell import Cell
 
 
 class Board:

@@ -17,18 +17,19 @@ class Button:
         self.rect = self.rendered_text.get_rect(center=pos)
 
     def draw(self, screen):
-        # Re-render the text with the current color
         self.rendered_text = self.font.render(self.text, True, self.color)
         pygame.draw.rect(screen, self.border_color, self.rect.inflate(self.border_width * 2, self.border_width * 2), self.border_width)
         screen.blit(self.rendered_text, self.rect)
 
-    def is_clicked(self, mouse_pos):
+    def is_clicked(self, mouse_pos): # For Clicking
         return self.rect.collidepoint(mouse_pos)
 
     def set_highlight(self, highlight_color):
-        """Change the button color to highlight"""
         self.color = highlight_color
 
     def reset_color(self):
-        """Reset the button to its default color"""
         self.color = self.default_color
+
+    def is_hovered(self, mouse_pos): # For Hovering
+        return self.rect.collidepoint(mouse_pos)
+

@@ -3,7 +3,7 @@
 import random
 from collections import deque
 
-from cell_test import Cell
+from test.pure_python.cell_test import Cell
 
 
 class Board:

@@ -1,26 +1,14 @@
 ### TO DO LIST ###
-#1. Make it such that when mouse hovers over a clickable button it changes cursor
+#1. Make it such that when mouse hovers to board
 #2. Add sprites to the game to make it look nicer
 
 
-from board import Board
-from button import Button
+from static.board import Board
+from static.button import Button
+from static.constants import *
 
 import pygame
 import sys
-
-SCREEN_WIDTH = 1000
-SCREEN_HEIGHT = 700
-
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
-
-SIDE_MARGIN = 50
-TOP_MARGIN = 200
 
 class Game:
     def __init__(self):
@@ -28,6 +16,7 @@ class Game:
         pygame.display.set_caption("3D Minesweeper")
         self.difficulty = 0
         self.is_end = False
+        self.hovering = False
 
     #Miscellanous Functions
     def set_easy(self):
@@ -46,6 +35,7 @@ class Game:
         self.is_end = False
         self.start_screen()
 
+    #Board Manipulations
     def click_actions(self, event, board_size, curr_layer, first_click):
         mouse_pos = pygame.mouse.get_pos()
 
@@ -140,10 +130,19 @@ class Game:
         while running:
             self.screen.fill(BLACK)
             self.screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 150))
+            mouse_pos = pygame.mouse.get_pos()
 
             # Draw buttons
             for button in self.buttons:
                 button.draw(self.screen)
+                if button.is_hovered(mouse_pos):
+                    self.hovering = True
+
+            # Change cursor based on hover state
+            if self.hovering:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+            else:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
             pygame.display.flip()
 
@@ -164,6 +163,8 @@ class Game:
                                 button.set_highlight(WHITE)  # Highlight the selected button
                                 button.action()  # Set the difficulty
                             elif button.text == "Start Game":
+                                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+                                self.hovering = False
                                 button.action()  # Start the game
 
     def display_end_screen(self, message):
@@ -321,6 +322,7 @@ class Game:
 
 
         while running:
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
