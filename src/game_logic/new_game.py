@@ -160,7 +160,10 @@ class Game:
         pygame.font.init()
 
         pygame.mixer.init()  # Ensure mixer is initialized
-        pygame.mixer.music.load('assets\music\\bgm.mp3')  # Load the music file
+        try:
+            pygame.mixer.music.load('src/assets/music/bgm.mp3')  # Load the music file from vsc
+        except:
+            pygame.mixer.music.load('assets\music\\bgm.mp3')  # Load the music file from commmand prompt 
         pygame.mixer.music.play(-1, 0.0)  # Loop indefinitely
 
         self.display_start_screen()

@@ -45,7 +45,6 @@ class GameScreen:
                             self.quit_button.action()
                             
                         elif event.button in [1, 2, 3]:
-                            print('working!')
                             self.game.click_actions(event, self.board_size, self.curr_layer, self.first_click)
                             
 
@@ -143,7 +142,7 @@ class GameScreen:
         self.screen.blit(flags_text, (SIDE_MARGIN, 100))
         
         self.quit_button.draw(self.screen)
-        if not self.game.is_end:
+        if not self.game.get_is_end():
             self.give_up_button.draw(self.screen)
 
         available_width = SCREEN_WIDTH - 2 * SIDE_MARGIN

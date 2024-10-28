@@ -41,4 +41,5 @@ class EndScreen:
                     mouse_pos = pygame.mouse.get_pos()
                     for button in self.end_buttons:
                         if button.is_clicked(mouse_pos):
+                            self.game.set_is_end(True)
                             button.action()  # Perform the action for the clicked button
