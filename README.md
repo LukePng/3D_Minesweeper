@@ -40,9 +40,11 @@ Clicking
 
 ## Requirements
 1. Install Python version 3.0 and beyond
+
 If python is not installed, refer to https://www.python.org/downloads/
 
 2. Ensure you have the pygame module
+
 If pygame module is missing, enter 'pip install pygame' inside your command prompt
 
 3. Have a computer!
