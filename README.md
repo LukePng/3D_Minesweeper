@@ -7,11 +7,13 @@ You can think otherwise with this new implementation of a 3D minesweeper!
 
 This will be made fully with python, with python libraries used to build the application
 
-TBC soon!
+
 
 ## Features
 1. Instead of having 8 sides for every tile, there is now up 26 sides that can possibly have a mine with every open square (or is it a cube)
 2. You can rotate the block and zoom into each layers, uncovering more and more mines as you do so!
+
+
 
 ## Controls
 WASDRF keys to move the 3D cube to different orientation
@@ -38,6 +40,7 @@ Clicking
 3. Enter 'python3 main.py' in the command prompt
 
 
+
 ## Requirements
 1. Install Python version 3.0 and beyond
 
@@ -51,6 +54,9 @@ If pygame module is missing, enter 'pip install pygame' inside your command prom
 
 
 
+## Upcoming Improvements
+1. Better Sound Track
+2. When hovering over a clickable button, cursor change to click
 
 
 ## Future projects

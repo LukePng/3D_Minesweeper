@@ -19,6 +19,16 @@ class GameScreen:
 
         self.end_buttons = [self.give_up_button, self.quit_button]
 
+        try:
+            self.tiles_image = pygame.image.load("src\\assets\image\\tile.png").convert()
+            self.flagged_image = pygame.image.load("src\\assets\image\\flagged_tile.png").convert()
+            self.mine_image = pygame.image.load("src\\assets\image\\mine.png").convert()
+        except:
+            self.tiles_image = pygame.image.load("src/assets/image/tile.png").convert()
+            self.flagged_image = pygame.image.load("src/assets/image/flagged_tile.png").convert()
+            self.mine_image = pygame.image.load("src/assets/image/mine.png").convert()
+
+
 
     def set_first_click(self):
         self.first_click = False
@@ -157,13 +167,30 @@ class GameScreen:
             for x in range(board_size):
                 cell = self.game.board.get_board()[self.curr_layer][y][x]
         
-                color = BLUE if cell.is_flagged else GREEN if not cell.is_revealed else RED if cell.is_mine else WHITE
+                # color = BLUE if cell.is_flagged else GREEN if not cell.is_revealed else RED if cell.is_mine else WHITE
                 rect = pygame.Rect(left_margin + x * cell_size, top_margin + y * cell_size, cell_size, cell_size)
-        
-                pygame.draw.rect(self.screen, color, rect)
-                pygame.draw.rect(self.screen, WHITE, rect, 1)
-        
-                if cell.is_revealed and not cell.is_mine:
+                
+                # pygame.draw.rect(self.screen, color, rect)
+                # pygame.draw.rect(self.screen, WHITE, rect, 1)
+
+                if cell.get_is_flagged() and not self.game.get_is_end(): # Flagged tiles will dissapear after game ends
+                    image = pygame.transform.scale(self.flagged_image, (cell_size, cell_size))
+                    self.screen.blit(image, rect)
+
+                elif not cell.get_is_revealed():
+                    image = pygame.transform.scale(self.tiles_image, (cell_size, cell_size))
+                    self.screen.blit(image, rect)
+
+                elif cell.get_is_mine():
+                    image = pygame.transform.scale(self.mine_image, (cell_size, cell_size))
+                    self.screen.blit(image, rect)
+                    pygame.draw.rect(self.screen, DARKGREY, rect, 2)
+
+                else: #If the tile does not contains a mine and is revealed
+                    pygame.draw.rect(self.screen, GREY, rect)
+                    pygame.draw.rect(self.screen, DARKGREY, rect, 2)
+
+                if cell.get_is_revealed() and not cell.get_is_mine():
                     text_surface = font.render(str(cell.adjacent_mines), True, BLACK)
                     text_rect = text_surface.get_rect(center=(rect.centerx, rect.centery))
         
