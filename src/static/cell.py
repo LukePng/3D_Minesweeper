@@ -4,6 +4,7 @@ class Cell:
         self.is_revealed = False
         self.adjacent_mines = 0
         self.is_flagged = False
+        self.mine_probability = 0 # Value in range 0-1 inclusive
 
     def reveal(self):
         self.is_revealed = True
@@ -13,6 +14,9 @@ class Cell:
 
     def flag(self):
         self.is_flagged = not self.get_is_flagged()
+
+    def set_mine_probability(self, new_prob):
+        self.mine_probability = new_prob
 
     def get_adj_mines(self):
         return self.adjacent_mines
@@ -25,4 +29,8 @@ class Cell:
     
     def get_is_flagged(self):
         return self.is_flagged
+    
+    
+    def get_mine_probaility(self):
+        return self.mine_probability
     

@@ -22,11 +22,15 @@ class Board:
         self._board = None
         self._size = size
 
+
+
     def gen_board(self):
         # Create a 3D array of Cell objects
         self._board = [[[Cell() for _ in range(self._size)] for _ in range(self._size)] for _ in range(self._size)]
         self.generate_mines()
         self.count_adjacent_mines()
+
+
 
     def get_board(self):
         return self._board
@@ -60,6 +64,8 @@ class Board:
                 self._board[z][y][x].is_mine = True
                 placed_mines += 1
 
+
+
     def count_adjacent_mines(self):
         for z in range(self._size):
             for y in range(self._size):
@@ -75,6 +81,8 @@ class Board:
                                 mine_count += 1
 
                     self._board[z][y][x].adjacent_mines = mine_count
+
+
 
     def rotate(self, orient):
         temp_arr = [[[None for _ in range(self._size)] for _ in range(self._size)] for _ in range(self._size)]
@@ -115,17 +123,23 @@ class Board:
 
         temp_arr = None #Clearing up memory
 
-    def reveal_cell(self, z, y, x):
-        if 0 <= z < self._size and 0 <= y < self._size and 0 <= x < self._size:
-            cell = self._board[z][y][x]
+
+
+    def reveal_cell(self, h, r, c):
+        if 0 <= h < self._size and 0 <= r < self._size and 0 <= c < self._size:
+            cell = self._board[h][r][c]
             if not cell.is_revealed:
                 cell.reveal()
+
+
 
     def display_complete_board(self): # Reveals all the cells
         for i in range(self._size):
             for j in range(self._size):
                 for k in range(self._size):
                     self._board[i][j][k].reveal()
+
+
 
     def clear_zeros(self, h, r, c):
         queue = deque([(h, r, c)])
@@ -146,6 +160,8 @@ class Board:
                         if not self._board[nh][nr][nc].is_revealed:
                             queue.append((nh, nr, nc))
 
+
+
     def check_win(self):
         for h in range(self._size):
             for r in range(self._size):
@@ -153,7 +169,9 @@ class Board:
                     if (not self._board[h][r][c].get_is_mine()) and (not self._board[h][r][c].get_is_revealed()):
                         return False
         return True
-    
+
+
+
     def check_lose(self, curr_layer, r, c):
 
         if self._board[curr_layer][r][c].get_is_mine() and self._board[curr_layer][r][c].get_is_revealed():
@@ -162,3 +180,70 @@ class Board:
         return False
 
 
+    def find_external_revealed(self): #Used to find Unique external revealed cells
+        external_layer = set()  # Store unique external revealed cells
+        for h in range(self._size):
+            for r in range(self._size):
+                for c in range(self._size):
+                    cell = self._board[h][r][c]
+                    if cell.get_is_revealed():
+                        for dh, dr, dc in self.OFFSETS:
+                            nh, nr, nc = h + dh, r + dr, c + dc
+                            # Check if adjacent cell is unrevealed and within bounds
+                            if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
+                                if not self._board[nh][nr][nc].get_is_revealed():
+                                    external_layer.add((h, r, c))
+                                    break  # Move to the next revealed cell
+        return external_layer
+    
+    def find_external_unrevealed(self): #Returns unique unrevealed outer layer
+        external_layer = self.find_external_revealed_layer()
+
+        external_unrevealed = set()
+        for key in external_layer:
+            temp_set = set()
+            for dh, dr, dc in self.OFFSETS:
+                nh, nr, nc = key[0] + dh, key[1] + dr, key[2] + dc
+                if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
+                    if not self._board[nh][nr][nc].get_is_revealed():
+                        temp_set.add((nh, nr, nc))
+                        external_unrevealed.add((nh, nr, nc))
+
+
+        return external_unrevealed
+    
+    def find_external_unrevealed_dict(self): #Returns a dict of unique revealed outer layer with values as adj unrevealed outer layer
+        external_layer = self.find_external_revealed()
+
+        external = {}
+        for key in external_layer:
+            temp_set = set()
+            for dh, dr, dc in self.OFFSETS:
+                nh, nr, nc = key[0] + dh, key[1] + dr, key[2] + dc
+                if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
+                    if not self._board[nh][nr][nc].get_is_revealed():
+                        temp_set.add((nh, nr, nc))
+                
+            external[key] = temp_set
+        return external
+    
+
+    def get_total_nonlocal_unrevealed(self):
+        external_unrevealed = self.find_external_unrevealed
+
+        nonlocal_unrevealed_cnt = 0
+        for h in range(self._size):
+            for r in range(self._size):
+                for c in range(self._size):
+                    cell = self._board[h][r][c]
+                    if not cell.get_is_revealed():
+                        nonlocal_unrevealed_cnt += 1
+
+        nonlocal_unrevealed -= len(external_unrevealed)
+        return nonlocal_unrevealed_cnt
+    
+
+    def calc_probability(self):
+        #for nonlocal unrevealed, number of different combinations = nCr, where n is the number of nonlocal unrevealed and r is the number of mines
+
+        pass

@@ -6,6 +6,7 @@ from static.board import Board
 from game_logic.game_screen import GameScreen
 from game_logic.start_screen import StartScreen
 from game_logic.end_screen import EndScreen
+from game_logic.cheat_screen import CheatScreen
 
 class Game:
     def __init__(self):
@@ -97,9 +98,14 @@ class Game:
                             self.is_end == True
 
                         # Check win condition
-                        if self.board.check_win():
+                        elif self.board.check_win():
                             self.display_end_screen("Congratulations! You won!")
                             self.is_end == True
+                        
+                        else:
+                            pass # To add cheatScreen functions
+
+
 
                 elif event.button == 3:  # Right-click
                     if self.board.get_board()[curr_layer][Y][X].get_is_revealed():
@@ -146,6 +152,10 @@ class Game:
         self.initialize_board()  # Initialize the board
         self.game_screen = GameScreen(self, self.screen)
         self.game_screen.display_board()
+
+    def display_cheat_screen(self):
+        self.display_cheat_screen = CheatScreen(self, self.screen)
+        self.cheat_screen.display()
 
 
     def display_end_screen(self, message):

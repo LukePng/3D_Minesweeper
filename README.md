@@ -56,7 +56,8 @@ If pygame module is missing, enter 'pip install pygame' inside your command prom
 
 ## Upcoming Improvements
 1. Better Sound Track
-2. When hovering over a clickable button, cursor change to click
+2. When hovering over a clickable button, cursor change to click3
+3. Add a cheat mode to help you solve based on probablitiy
 
 
 ## Future projects

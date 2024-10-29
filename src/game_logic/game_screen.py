@@ -16,14 +16,17 @@ class GameScreen:
 
         self.give_up_button = Button("Give Up", (SCREEN_WIDTH - SIDE_MARGIN - 100, 100), RED, 30, action=self.give_up, border_color=WHITE, border_width=1)
         self.quit_button = Button("Quit Game", (SCREEN_WIDTH - SIDE_MARGIN - 100, 50), RED, 30, action=self.game.display_start_screen, border_color=WHITE, border_width=1)
+        #self.cheat_button = Button("Cheat", (SCREEN_WIDTH - SIDE_MARGIN - 100, 50), RED, 30, action=self.game.display_cheat_screen, border_color=WHITE, border_width=1)
 
         self.end_buttons = [self.give_up_button, self.quit_button]
 
         try:
-            self.tiles_image = pygame.image.load("src\\assets\image\\tile.png").convert()
-            self.flagged_image = pygame.image.load("src\\assets\image\\flagged_tile.png").convert()
-            self.mine_image = pygame.image.load("src\\assets\image\\mine.png").convert()
+            print('hi?')
+            self.tiles_image = pygame.image.load("assets\image\\tile.png").convert()
+            self.flagged_image = pygame.image.load("assets\image\\flagged_tile.png").convert()
+            self.mine_image = pygame.image.load("assets\image\\mine.png").convert()
         except:
+            print('bye')
             self.tiles_image = pygame.image.load("src/assets/image/tile.png").convert()
             self.flagged_image = pygame.image.load("src/assets/image/flagged_tile.png").convert()
             self.mine_image = pygame.image.load("src/assets/image/mine.png").convert()
