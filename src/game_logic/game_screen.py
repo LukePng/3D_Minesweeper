@@ -12,21 +12,21 @@ class GameScreen:
         self.screen = screen
         self.curr_layer = 0
         self.first_click = True
+        self.cheat = False
+        self.cheat_clicked = False
         self.board_size = self.game.get_board().get_size()
 
         self.give_up_button = Button("Give Up", (SCREEN_WIDTH - SIDE_MARGIN - 100, 100), RED, 30, action=self.give_up, border_color=WHITE, border_width=1)
         self.quit_button = Button("Quit Game", (SCREEN_WIDTH - SIDE_MARGIN - 100, 50), RED, 30, action=self.game.display_start_screen, border_color=WHITE, border_width=1)
-        #self.cheat_button = Button("Cheat", (SCREEN_WIDTH - SIDE_MARGIN - 100, 50), RED, 30, action=self.game.display_cheat_screen, border_color=WHITE, border_width=1)
+        self.cheat_button = Button("Cheat", (SCREEN_WIDTH - SIDE_MARGIN - 100, 150), RED, 30, action=self.change_cheat, border_color=WHITE, border_width=1)
 
         self.end_buttons = [self.give_up_button, self.quit_button]
 
         try:
-            print('hi?')
             self.tiles_image = pygame.image.load("assets\image\\tile.png").convert()
             self.flagged_image = pygame.image.load("assets\image\\flagged_tile.png").convert()
             self.mine_image = pygame.image.load("assets\image\\mine.png").convert()
         except:
-            print('bye')
             self.tiles_image = pygame.image.load("src/assets/image/tile.png").convert()
             self.flagged_image = pygame.image.load("src/assets/image/flagged_tile.png").convert()
             self.mine_image = pygame.image.load("src/assets/image/mine.png").convert()
@@ -38,6 +38,12 @@ class GameScreen:
     
     def get_first_click(self):
         return self.first_click
+    
+    def change_cheat(self):
+        self.cheat = not self.cheat
+
+    def change_cheat_click(self):
+        self.cheat_clicked = not self.cheat_clicked
 
 
 
@@ -56,9 +62,19 @@ class GameScreen:
 
                         elif self.quit_button.is_clicked(pygame.mouse.get_pos()):
                             self.quit_button.action()
+
+                        elif self.cheat_button.is_clicked(pygame.mouse.get_pos()):
+                            self.change_cheat_click()
+
+                            if self.cheat_clicked:
+                                self.game.get_board().reset_probability()
+                                self.game.get_board().calc_probability()
+                                print('Done!')
                             
+                            self.cheat_button.action()
+
                         elif event.button in [1, 2, 3]:
-                            self.game.click_actions(event, self.board_size, self.curr_layer, self.first_click)
+                            self.game.click_actions(event, self.board_size, self.curr_layer, self.first_click, self.cheat)
                             
 
                         else:
@@ -157,6 +173,7 @@ class GameScreen:
         self.quit_button.draw(self.screen)
         if not self.game.get_is_end():
             self.give_up_button.draw(self.screen)
+            self.cheat_button.draw(self.screen)
 
         available_width = SCREEN_WIDTH - 2 * SIDE_MARGIN
         available_height = SCREEN_HEIGHT - TOP_MARGIN - SIDE_MARGIN
@@ -170,12 +187,8 @@ class GameScreen:
             for x in range(board_size):
                 cell = self.game.board.get_board()[self.curr_layer][y][x]
         
-                # color = BLUE if cell.is_flagged else GREEN if not cell.is_revealed else RED if cell.is_mine else WHITE
                 rect = pygame.Rect(left_margin + x * cell_size, top_margin + y * cell_size, cell_size, cell_size)
                 
-                # pygame.draw.rect(self.screen, color, rect)
-                # pygame.draw.rect(self.screen, WHITE, rect, 1)
-
                 if cell.get_is_flagged() and not self.game.get_is_end(): # Flagged tiles will dissapear after game ends
                     image = pygame.transform.scale(self.flagged_image, (cell_size, cell_size))
                     self.screen.blit(image, rect)
@@ -183,6 +196,12 @@ class GameScreen:
                 elif not cell.get_is_revealed():
                     image = pygame.transform.scale(self.tiles_image, (cell_size, cell_size))
                     self.screen.blit(image, rect)
+                    
+                    if self.cheat:
+                        text_surface = font.render(str(cell.get_mine_prob()), True, BLACK)
+                        text_rect = text_surface.get_rect(center=(rect.centerx, rect.centery))
+        
+                        self.screen.blit(text_surface, text_rect)
 
                 elif cell.get_is_mine():
                     image = pygame.transform.scale(self.mine_image, (cell_size, cell_size))
@@ -194,7 +213,7 @@ class GameScreen:
                     pygame.draw.rect(self.screen, DARKGREY, rect, 2)
 
                 if cell.get_is_revealed() and not cell.get_is_mine():
-                    text_surface = font.render(str(cell.adjacent_mines), True, BLACK)
+                    text_surface = font.render(str(cell.get_adj_mines()), True, BLACK)
                     text_rect = text_surface.get_rect(center=(rect.centerx, rect.centery))
         
                     self.screen.blit(text_surface, text_rect)

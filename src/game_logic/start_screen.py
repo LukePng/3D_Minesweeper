@@ -53,4 +53,3 @@ class StartScreen:
                     for button in self.buttons:
                         if button.is_clicked(mouse_pos):
                             button.action()
-                            print(self.game.get_difficulty())

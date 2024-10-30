@@ -49,14 +49,14 @@ class Game:
 
 
     def initialize_board(self):
-        board_params = {0: (3, 2), 1: (5, 25), 2: (10, 100)}
+        board_params = {0: (3, 2), 1: (5, 12), 2: (10, 100)}
         size, num_mines = board_params[self.difficulty]
         self.board = Board(size, num_mines)
         self.board.gen_board()
 
 
 
-    def click_actions(self, event, board_size, curr_layer, first_click):
+    def click_actions(self, event, board_size, curr_layer, first_click, cheat):
         mouse_pos = pygame.mouse.get_pos()
 
         available_width = SCREEN_WIDTH - 2 * SIDE_MARGIN
@@ -101,10 +101,11 @@ class Game:
                         elif self.board.check_win():
                             self.display_end_screen("Congratulations! You won!")
                             self.is_end == True
-                        
-                        else:
-                            pass # To add cheatScreen functions
-
+                
+                        elif cheat:
+                            self.board.reset_probability()
+                            self.board.calc_probability()
+                            print('Done!')
 
 
                 elif event.button == 3:  # Right-click
