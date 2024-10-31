@@ -236,69 +236,71 @@ class Board:
         layouts = []  # Store all valid layouts
         current_layout = {}
 
-        def backtrack(index):
+        def backtrack(index, num_mines):
+
             if index == len(potential_cells):
-                if self.is_valid_configuration(current_layout):
-                    layouts.append(current_layout.copy())
+                layouts.append(current_layout.copy())
+                print('added!')
                 return
+
 
             h, r, c = potential_cells[index]
 
             # Case 1: Assume no mine here
             current_layout[(h, r, c)] = False
-            if self.is_valid_configuration(current_layout):
-                backtrack(index + 1)
+            if self.is_valid_configuration(current_layout, (h, r, c)):
+                backtrack(index + 1, num_mines)
 
             # Case 2: Assume a mine here
             current_layout[(h, r, c)] = True
-            if self.is_valid_configuration(current_layout):
-                backtrack(index + 1)
-
+            if self.is_valid_configuration(current_layout, (h, r, c)):
+                backtrack(index + 1, num_mines - 1)
 
             # Undo the assumption for backtracking
             del current_layout[(h, r, c)]
 
 
         # Initialize the backtracking process
-        backtrack(0)
-        
-
+        backtrack(0, self._num_mines)
         return layouts
 
-    def is_valid_configuration(self, layout):
-        """
-        Helper function to check if the current mine layout configuration is valid.
-        It ensures the adjacent mine counts for revealed cells match the board's requirements.
-        """
-        for h, r, c in self.find_external_revealed():
-            adj_mine_cnt = self._board[h][r][c].get_adj_mines()
-            total_adj_unrevealed = 0
-            adj_referenced = 0
-            curr_adj_mines = 0
-            
-            
-            for dh, dr, dc in self.OFFSETS:
-                nh, nr, nc = h + dh, r + dr, c + dc
+    def is_valid_configuration(self, layout, curr_pos):
+        h, r, c = curr_pos
 
-                if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
-                    if not self._board[nh][nr][nc].get_is_revealed():
-                        total_adj_unrevealed += 1
+        for dh, dr, dc in self.OFFSETS:
+            nh, nr, nc = h + dh, r + dr, c + dc
 
-                    if self._board[nh][nr][nc].get_is_flagged(): #POSSIBLE EDGE CASE: MORE FLAGS THAN ACTUAL
-                        adj_mine_cnt -= 1
+            if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
+                cell = self._board[nh][nr][nc]
+                adj_mine_cnt = cell.get_adj_mines()
+                total_adj_unrevealed = 0
+                adj_referenced = 0
+                curr_adj_mines = 0
 
-                if (nh, nr, nc) in layout:
+                if cell.get_is_revealed():
+                    for adj_dh, adj_dr, adj_dc in self.OFFSETS:
+                        adj_nh, adj_nr, adj_nc = nh + adj_dh, nr + adj_dr, nc + adj_dc
+
+                        if 0 <= adj_nh < self._size and 0 <= adj_nr < self._size and 0 <= adj_nc < self._size:
+                            if not self._board[adj_nh][adj_nr][adj_nc].get_is_revealed():
+                                total_adj_unrevealed += 1
+
+                            if self._board[adj_nh][adj_nr][adj_nc].get_is_flagged(): #POSSIBLE EDGE CASE: MORE FLAGS THAN ACTUAL
+                                adj_mine_cnt -= 1
+
+                        if (adj_nh, adj_nr, adj_nc) in layout:
+                            adj_referenced += 1
+
+                            if layout[(adj_nh, adj_nr, adj_nc)]:
+                                curr_adj_mines += 1
+
+                    # Verify if this revealed cell's count matches the board's expected mine count
+                    if curr_adj_mines > adj_mine_cnt:
+                        return False
                     
-                    adj_referenced += 1
-                    if layout[(nh, nr, nc)]:
-                        curr_adj_mines += 1
-            # Verify if this revealed cell's count matches the board's expected mine count
-            if curr_adj_mines > adj_mine_cnt:
-                return False
-            
-            elif total_adj_unrevealed - adj_referenced + curr_adj_mines < adj_mine_cnt:
-                return False
-            
+                    elif total_adj_unrevealed - adj_referenced + curr_adj_mines < adj_mine_cnt:
+                        return False
+                
         return True
 
 
