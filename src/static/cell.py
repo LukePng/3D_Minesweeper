@@ -4,7 +4,7 @@ class Cell:
         self.is_revealed = False
         self.adjacent_mines = 0
         self.is_flagged = False
-        self.mine_probability = 0.0 # Value in range 0-1 inclusive
+        self.mine_probability = 0.00 # Value in range 0-1 inclusive
 
     def reveal(self):
         self.is_revealed = True

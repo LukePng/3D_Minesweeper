@@ -197,7 +197,7 @@ class Board:
                                     break  # Move to the next revealed cell
         return external_layer
     
-    def find_external_unrevealed(self): #Returns unique unrevealed outer layer
+    def find_external_unrevealed(self): #Returns unique unrevealed outer layer, if they are not flagged
         external_layer = self.find_external_revealed()
 
         external_unrevealed = set()
@@ -206,7 +206,7 @@ class Board:
             for dh, dr, dc in self.OFFSETS:
                 nh, nr, nc = key[0] + dh, key[1] + dr, key[2] + dc
                 if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
-                    if not self._board[nh][nr][nc].get_is_revealed():
+                    if not self._board[nh][nr][nc].get_is_revealed() and not self._board[nh][nr][nc].get_is_flagged():
                         temp_set.add((nh, nr, nc))
                         external_unrevealed.add((nh, nr, nc))
 
@@ -217,15 +217,17 @@ class Board:
         external_unrevealed = self.find_external_unrevealed()
 
         nonlocal_unrevealed_cnt = 0
+        nonlocal_unrevealed = set()
+
         for h in range(self._size):
             for r in range(self._size):
                 for c in range(self._size):
                     cell = self._board[h][r][c]
-                    if not cell.get_is_revealed():
+                    if not cell.get_is_revealed() and (h, r, c) not in external_unrevealed:
                         nonlocal_unrevealed_cnt += 1
+                        nonlocal_unrevealed.add((h, r, c))
 
-        nonlocal_unrevealed_cnt -= len(external_unrevealed)
-        return nonlocal_unrevealed_cnt
+        return nonlocal_unrevealed_cnt, nonlocal_unrevealed
     
 
     def find_possible_mine_layouts(self):
@@ -259,6 +261,8 @@ class Board:
 
         # Initialize the backtracking process
         backtrack(0)
+        
+
         return layouts
 
     def is_valid_configuration(self, layout):
@@ -280,6 +284,9 @@ class Board:
                     if not self._board[nh][nr][nc].get_is_revealed():
                         total_adj_unrevealed += 1
 
+                    if self._board[nh][nr][nc].get_is_flagged(): #POSSIBLE EDGE CASE: MORE FLAGS THAN ACTUAL
+                        adj_mine_cnt -= 1
+
                 if (nh, nr, nc) in layout:
                     
                     adj_referenced += 1
@@ -300,12 +307,18 @@ class Board:
         layouts = self.find_possible_mine_layouts()
         total_poss_arr = 0
 
+        non_local_pos = set()
+
         for layout in layouts:
-            non_local_unrevealed = self._size ** 3 - self.get_total_nonlocal_unrevealed()
+            non_local_unrevealed, non_local_unrevealed_pos = self.get_total_nonlocal_unrevealed()
+
             num_mines_left =  self._num_mines
             for prob_mine in layout.values():
                 if prob_mine == True:
                     num_mines_left -= 1
+
+            if num_mines_left < 0:
+                num_mines_left = 0
 
             poss_arr = math.comb(non_local_unrevealed, num_mines_left)
             total_poss_arr += poss_arr
@@ -314,12 +327,28 @@ class Board:
                 if prob_mine == True:
                     self._board[pos[0]][pos[1]][pos[2]].set_mine_prob(self._board[pos[0]][pos[1]][pos[2]].get_mine_prob() + poss_arr)
 
+            if non_local_unrevealed:
+                if num_mines_left == 0:
+                    num_mines_left += 1
+                nonlocal_poss_ref = math.comb(non_local_unrevealed - 1, num_mines_left - 1)
+
+                for pos in non_local_unrevealed_pos:
+                    self._board[pos[0]][pos[1]][pos[2]].set_mine_prob(self._board[pos[0]][pos[1]][pos[2]].get_mine_prob() + nonlocal_poss_ref)
+                    non_local_pos.add(pos)
+
         
         #Since all the different layouts have the same key, we only need the first layer
         for pos in layouts[0].keys():
-            new_mine_prob = math.floor(self._board[pos[0]][pos[1]][pos[2]].get_mine_prob() / total_poss_arr * 100) / 100
+            new_mine_prob = math.floor(100 - self._board[pos[0]][pos[1]][pos[2]].get_mine_prob() / total_poss_arr * 100) / 100
 
             self._board[pos[0]][pos[1]][pos[2]].set_mine_prob(new_mine_prob)
+
+        if non_local_pos:
+            for pos in non_local_pos:
+                new_mine_prob = math.floor(100 - self._board[pos[0]][pos[1]][pos[2]].get_mine_prob() / total_poss_arr * 100) / 100
+
+                self._board[pos[0]][pos[1]][pos[2]].set_mine_prob(new_mine_prob)
+
 
     def reset_probability(self):
         for h in range(self._size):
