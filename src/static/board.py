@@ -1,6 +1,7 @@
 import random
 import math
 from collections import deque
+import asyncio
 
 from static.cell import Cell
 
@@ -230,13 +231,13 @@ class Board:
         return nonlocal_unrevealed_cnt, nonlocal_unrevealed
     
 
-    def find_possible_mine_layouts(self):
+    async def find_possible_mine_layouts(self):
         # Gather external unrevealed cells as potential mine candidates
         potential_cells = self.find_external_unrevealed()
         layouts = []  # Store all valid layouts
         current_layout = {}
 
-        def backtrack(index, num_mines):
+        async def backtrack(index, num_mines):
 
             if index == len(potential_cells):
                 layouts.append(current_layout.copy())
@@ -249,19 +250,19 @@ class Board:
             # Case 1: Assume no mine here
             current_layout[(h, r, c)] = False
             if self.is_valid_configuration(current_layout, (h, r, c)):
-                backtrack(index + 1, num_mines)
+                await backtrack(index + 1, num_mines)
 
             # Case 2: Assume a mine here
             current_layout[(h, r, c)] = True
             if self.is_valid_configuration(current_layout, (h, r, c)):
-                backtrack(index + 1, num_mines - 1)
+                await backtrack(index + 1, num_mines - 1)
 
             # Undo the assumption for backtracking
             del current_layout[(h, r, c)]
 
 
         # Initialize the backtracking process
-        backtrack(0, self._num_mines)
+        await backtrack(0, self._num_mines)
         return layouts
 
     def is_valid_configuration(self, layout, curr_pos):
@@ -304,9 +305,9 @@ class Board:
         return True
 
 
-    def calc_probability(self):
+    async def calc_probability(self):
         #for nonlocal unrevealed, number of different combinations = nCr, where n is the number of nonlocal unrevealed and r is the number of mines
-        layouts = self.find_possible_mine_layouts()
+        layouts = await self.find_possible_mine_layouts()
         total_poss_arr = 0
 
         non_local_pos = set()

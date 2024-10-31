@@ -1,5 +1,6 @@
 import pygame
 import sys
+import asyncio
 
 from static.constants import *
 from static.board import Board
@@ -49,7 +50,7 @@ class Game:
 
 
     def initialize_board(self):
-        board_params = {0: (3, 2), 1: (5, 12), 2: (10, 100)}
+        board_params = {0: (3, 2), 1: (5, 20), 2: (10, 100)}
         size, num_mines = board_params[self.difficulty]
         self.board = Board(size, num_mines)
         self.board.gen_board()
@@ -104,7 +105,7 @@ class Game:
                 
                         elif cheat:
                             self.board.reset_probability()
-                            self.board.calc_probability()
+                            asyncio.run(self.board.calc_probability())
                             print('Done!')
 
 

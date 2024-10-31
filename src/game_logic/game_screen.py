@@ -1,5 +1,5 @@
 import pygame
-import sys
+import asyncio
 
 from static.button import Button
 from static.constants import *
@@ -68,7 +68,7 @@ class GameScreen:
 
                             if self.cheat_clicked:
                                 self.game.get_board().reset_probability()
-                                self.game.get_board().calc_probability()
+                                asyncio.run(self.game.get_board().calc_probability())
                                 print('Done!')
                             
                             self.cheat_button.action()
