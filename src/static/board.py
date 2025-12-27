@@ -72,6 +72,8 @@ class Board:
     def flatten_coord(self, x, y, z):
         return z * self.dim ** 2 + y * self.dim + x
     
+    def get_cell(self, x, y, z):
+        return self.board[self.flatten_coord(x, y, z)]
 #==============BOARD LOGIC==============#
     def gen_board(self):
         # Create a 3D array of Cell objects
@@ -108,22 +110,31 @@ class Board:
 
     def clear_zeros(self, z, y, x):
         idx = self.flatten_coord(x, y, z)
+        if idx == -1 or self.board[idx].get_is_revealed():
+            return
+
         queue = deque([idx])
-        self.board[idx].set_reveal(False)
+        
+        self.board[idx].reveal()
+        self.revealed_ctr += 1
 
         while queue:
             curr_idx = queue.popleft()
-
-            if self.board[curr_idx].is_revealed:
-                continue
             
-            self.board[curr_idx].reveal()
-            self.revealed_ctr += 1
-
+            # Only spread if the current revealed cell is a "0"
             if self.board[curr_idx].get_adj_mines() == 0:
                 for neighbor_idx in self.adj_map[curr_idx]:
-                    if not self.board[neighbor_idx].is_revealed:
-                        queue.append(neighbor_idx)
+                    neighbor = self.board[neighbor_idx]
+                    
+                    # If neighbor isn't revealed and isn't a mine
+                    if not neighbor.get_is_revealed() and not neighbor.get_is_mine():
+                        # REVEAL IT NOW before adding to queue to prevent duplicates
+                        neighbor.reveal()
+                        self.revealed_ctr += 1
+                        
+                        # Only add to queue to keep spreading if the neighbor is also a 0
+                        if neighbor.get_adj_mines() == 0:
+                            queue.append(neighbor_idx)
 
     def rotate(self, orient):
         temp_arr = [None] * self.size
@@ -151,6 +162,8 @@ class Board:
         temp_arr = None #Clearing up memory
 
     def check_win(self):
+        print(self.revealed_ctr)
+        print(self.size, self.num_mines)
         return self.revealed_ctr == self.size - self.num_mines
 
     def check_lose(self, curr_layer, y, x):

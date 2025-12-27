@@ -84,8 +84,11 @@ class Game:
                             self.game_screen.set_first_click()
 
                         else:
+                            if not self.board.get_cell(X, Y, curr_layer).get_is_revealed():
+                                self.board.add_revealed_ctr()
+
+                            
                             self.board.reveal_cell(curr_layer, Y, X)  # Reveal the cell 
-                            self.board.add_revealed_ctr()
 
                         if (self.board.get_board()[idx].get_adj_mines() == 0) and (not self.board.get_board()[idx].get_is_mine()):
                             self.board.clear_zeros(curr_layer, Y, X)
