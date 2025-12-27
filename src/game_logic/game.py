@@ -7,7 +7,6 @@ from static.board import Board
 from game_logic.game_screen import GameScreen
 from game_logic.start_screen import StartScreen
 from game_logic.end_screen import EndScreen
-from game_logic.cheat_screen import CheatScreen
 
 class Game:
     def __init__(self):
@@ -19,11 +18,8 @@ class Game:
         self.board = None
 
 
-
     def get_board(self):
         return self.board
-
-
 
     def set_hovering(self, new_hover):
         self.hovering = new_hover
@@ -39,8 +35,6 @@ class Game:
     def get_is_end(self):
         return self.is_end
 
-
-
     def set_difficulty(self, level):
         self.difficulty = level
 
@@ -50,11 +44,10 @@ class Game:
 
 
     def initialize_board(self):
-        board_params = {0: (3, 2), 1: (5, 20), 2: (10, 100)}
+        board_params = {0: (4, 5), 1: (5, 20), 2: (10, 100)}
         size, num_mines = board_params[self.difficulty]
         self.board = Board(size, num_mines)
         self.board.gen_board()
-
 
 
     def click_actions(self, event, board_size, curr_layer, first_click, cheat):
@@ -77,20 +70,24 @@ class Game:
 
             X, Y = int(x), int(y)
 
-            if 0 <= x < board_size and 0 <= y < board_size:
+            if 0 <= x < board_size and 0 <= y < board_size:                
+                idx = curr_layer * board_size ** 2 + Y * board_size + X # Flattening coordinates
+
                 if event.button == 1:  # Left-click
-                    if self.board.get_board()[curr_layer][Y][X].get_is_flagged():
+                    if self.board.get_board()[idx].get_is_flagged():
                         return  # Cell cannot be clicked onto if flagged
                     else:
                         if first_click:
-                            while (self.board.get_board()[curr_layer][Y][X].get_adj_mines() != 0) or (self.board.get_board()[curr_layer][Y][X].get_is_mine()):
+                            while (self.board.get_board()[idx].get_adj_mines() != 0) or (self.board.get_board()[idx].get_is_mine()):
                                 self.initialize_board()
                             
                             self.game_screen.set_first_click()
 
-                        self.board.reveal_cell(curr_layer, Y, X)  # Reveal the cell
+                        else:
+                            self.board.reveal_cell(curr_layer, Y, X)  # Reveal the cell 
+                            self.board.add_revealed_ctr()
 
-                        if (self.board.get_board()[curr_layer][Y][X].get_adj_mines() == 0) and (not self.board.get_board()[curr_layer][Y][X].get_is_mine()):
+                        if (self.board.get_board()[idx].get_adj_mines() == 0) and (not self.board.get_board()[idx].get_is_mine()):
                             self.board.clear_zeros(curr_layer, Y, X)
 
                         # Check lose condition
@@ -106,32 +103,31 @@ class Game:
                         elif cheat:
                             self.board.reset_probability()
                             asyncio.run(self.board.calc_probability())
-                            print('Done!')
 
 
                 elif event.button == 3:  # Right-click
-                    if self.board.get_board()[curr_layer][Y][X].get_is_revealed():
+                    if self.board.get_board()[idx].get_is_revealed():
                         return
                     else:
-                        self.board.get_board()[curr_layer][Y][X].flag()  # Flag the cell
+                        self.board.get_board()[idx].flag()  # Flag the cell
 
 
 
     def rotation_actions(self, event):
         if event.key == pygame.K_w:
             self.board.rotate('x')
+            self.board.rotate('x')
+            self.board.rotate('x')
 
         elif event.key == pygame.K_s:
-            self.board.rotate('x')
-            self.board.rotate('x')
             self.board.rotate('x')
 
         elif event.key == pygame.K_a:
             self.board.rotate('y')
+            self.board.rotate('y')
+            self.board.rotate('y')
 
         elif event.key == pygame.K_d:
-            self.board.rotate('y')
-            self.board.rotate('y')
             self.board.rotate('y')
 
         elif event.key == pygame.K_r:
@@ -155,11 +151,6 @@ class Game:
         self.game_screen = GameScreen(self, self.screen)
         self.game_screen.display_board()
 
-    def display_cheat_screen(self):
-        self.display_cheat_screen = CheatScreen(self, self.screen)
-        self.cheat_screen.display()
-
-
     def display_end_screen(self, message):
         self.end_screen = EndScreen(self, self.screen)
         self.end_screen.display(message)
@@ -171,9 +162,9 @@ class Game:
         pygame.init()
         pygame.font.init()
 
-        pygame.mixer.init()  # Ensure mixer is initialized
+        pygame.mixer.init()
         try:
-            pygame.mixer.music.load('src/assets/music/bgm.mp3')  # Load the music file from vsc
+            pygame.mixer.music.load('src/assets/music/bgm.mp3') # Load the music file from vsc
         except:
             pygame.mixer.music.load('assets\music\\bgm.mp3')  # Load the music file from commmand prompt 
         pygame.mixer.music.play(-1, 0.0)  # Loop indefinitely

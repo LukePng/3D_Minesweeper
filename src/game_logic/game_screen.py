@@ -14,7 +14,7 @@ class GameScreen:
         self.first_click = True
         self.cheat = False
         self.cheat_clicked = False
-        self.board_size = self.game.get_board().get_size()
+        self.board_size = self.game.get_board().get_dim() #### POTENTIAL PROBLEM!
 
         self.give_up_button = Button("Give Up", (SCREEN_WIDTH - SIDE_MARGIN - 100, 100), RED, 30, action=self.give_up, border_color=WHITE, border_width=1)
         self.quit_button = Button("Quit Game", (SCREEN_WIDTH - SIDE_MARGIN - 100, 50), RED, 30, action=self.game.display_start_screen, border_color=WHITE, border_width=1)
@@ -69,7 +69,6 @@ class GameScreen:
                             if self.cheat_clicked:
                                 self.game.get_board().reset_probability()
                                 asyncio.run(self.game.get_board().calc_probability())
-                                print('Done!')
                             
                             self.cheat_button.action()
 
@@ -143,7 +142,7 @@ class GameScreen:
                                 self.curr_layer -= 1
 
                         elif event.key == pygame.K_DOWN:
-                            if self.curr_layer == (self.game.get_board().get_size() - 1):
+                            if self.curr_layer == (self.board_size - 1):
                                 print("Already at the bottom!")
                             else:
                                 self.curr_layer += 1
@@ -156,15 +155,14 @@ class GameScreen:
                 self.draw_board()
                 pygame.display.flip()
 
-
+    
 
     def draw_board(self):
-        board_size = self.game.board.get_size()
         flags_left = self.game.board.get_num_mines() - self.game.board.get_num_flags()
 
         font = pygame.font.Font(None, 36)
         
-        layer_text = font.render(f"Layer: {self.curr_layer + 1}/{board_size}", True, WHITE)
+        layer_text = font.render(f"Layer: {self.curr_layer + 1}/{self.board_size}", True, WHITE)
         flags_text = font.render(f"Flags left: {flags_left}", True, WHITE)
 
         self.screen.blit(layer_text, (SIDE_MARGIN, 50))
@@ -178,14 +176,15 @@ class GameScreen:
         available_width = SCREEN_WIDTH - 2 * SIDE_MARGIN
         available_height = SCREEN_HEIGHT - TOP_MARGIN - SIDE_MARGIN
         
-        cell_size = min(available_width // board_size, available_height // board_size)
+        cell_size = min(available_width // self.board_size, available_height // self.board_size)
         
-        left_margin = (SCREEN_WIDTH - cell_size * board_size) // 2
-        top_margin = TOP_MARGIN + (available_height - cell_size * board_size) // 2
+        left_margin = (SCREEN_WIDTH - cell_size * self.board_size) // 2
+        top_margin = TOP_MARGIN + (available_height - cell_size * self.board_size) // 2
 
-        for y in range(board_size):
-            for x in range(board_size):
-                cell = self.game.board.get_board()[self.curr_layer][y][x]
+        for y in range(self.board_size):
+            for x in range(self.board_size):
+                idx = self.curr_layer * self.board_size ** 2 + y * self.board_size + x #Flattening coordinates
+                cell = self.game.board.get_board()[idx]
         
                 rect = pygame.Rect(left_margin + x * cell_size, top_margin + y * cell_size, cell_size, cell_size)
                 

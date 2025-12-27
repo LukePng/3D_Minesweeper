@@ -18,343 +18,290 @@ class Board:
                    (1, 0, -1)  , (1, 0, 0)  , (1, 0, 1),
                    (1, 1, -1)  , (1, 1, 0)  , (1, 1, 1)]
 
-    def __init__(self, size, num_mines):
-        self._size = size
-        self._num_mines = num_mines
-        self._board = None
-        self._size = size
+    def __init__(self, dimension, num_mines):
+        self.dim = dimension
+        self.size = dimension ** 3
+        self.num_mines = num_mines
+        self.board = [Cell() for _ in range(self.size)]
+        self.revealed_ctr = 0
+        # Pre-calculating neighbors to prevent the "wrap-around" bug and speeds up loops
+        self.adj_map = self._build_adjacency_map()
 
+    def _build_adjacency_map(self):
+        #Maps every flat index to its valid 3D neighbor indices once
+        adj_map = {}
+        for idx in range(self.size):
+            z = idx // (self.dim ** 2)
+            y = (idx // self.dim) % self.dim
+            x = idx % self.dim
+            
+            neighbors = []
+            for dz, dy, dx in self.OFFSETS:
+                nz, ny, nx = z + dz, y + dy, x + dx
+                if 0 <= nz < self.dim and 0 <= ny < self.dim and 0 <= nx < self.dim:
+                    neighbors.append(nz * self.dim**2 + ny * self.dim + nx)
+            adj_map[idx] = neighbors
+        return adj_map
 
+#==============GETTER/SETTER METHODS==============#
+    def get_num_flags(self):
+        cnt = 0
+        for cell in self.board:
+            if cell.is_flagged:
+                cnt += 1
+        return cnt
+    
+    def get_size(self):
+        return self.size
+    
+    def get_dim(self):
+        return self.dim
+    
+    def get_num_mines(self):
+        return self.num_mines
+    
+    def get_board(self):
+        return self.board
+    
+    def get_revealed_ctr(self):
+        return self.revealed_ctr
+    
+    def add_revealed_ctr(self):
+        self.revealed_ctr += 1
 
+    def flatten_coord(self, x, y, z):
+        return z * self.dim ** 2 + y * self.dim + x
+    
+#==============BOARD LOGIC==============#
     def gen_board(self):
         # Create a 3D array of Cell objects
-        self._board = [[[Cell() for _ in range(self._size)] for _ in range(self._size)] for _ in range(self._size)]
         self.generate_mines()
         self.count_adjacent_mines()
 
-
-
-    def get_board(self):
-        return self._board
-    
-    def get_size(self):
-        return self._size
-    
-    def get_num_mines(self):
-        return self._num_mines
-    
-    def get_num_flags(self):
-        cnt = 0
-        for z in range(self._size):
-            for y in range(self._size):
-                for x in range(self._size):
-                    if self._board[z][y][x].is_flagged:
-                        cnt += 1
-
-        return cnt
-
-
-
     def generate_mines(self):
-        placed_mines = 0
-        while placed_mines < self._num_mines:
-            z = random.randint(0, self._size - 1)
-            y = random.randint(0, self._size - 1)
-            x = random.randint(0, self._size - 1)
-
-            if not self._board[z][y][x].is_mine:
-                self._board[z][y][x].is_mine = True
-                placed_mines += 1
-
-
+        # Optimized to use random.sample for unique flat indices
+        mine_indices = random.sample(range(self.size), self.num_mines)
+        for idx in mine_indices:
+            self.board[idx].is_mine = True
 
     def count_adjacent_mines(self):
-        for z in range(self._size):
-            for y in range(self._size):
-                for x in range(self._size):
-                    if self._board[z][y][x].is_mine:
-                        continue
+        for idx in range(self.size):
+            if self.board[idx].is_mine:
+                continue
 
-                    mine_count = 0
-                    for dz, dy, dx in self.OFFSETS:
-                        nz, ny, nx = z + dz, y + dy, x + dx
-                        if 0 <= nz < self._size and 0 <= ny < self._size and 0 <= nx < self._size:
-                            if self._board[nz][ny][nx].is_mine:
-                                mine_count += 1
+            mine_count = 0
+            for neighbor_idx in self.adj_map[idx]:
+                if self.board[neighbor_idx].is_mine:
+                    mine_count += 1
 
-                    self._board[z][y][x].adjacent_mines = mine_count
+            self.board[idx].adjacent_mines = mine_count
 
+    def reveal_cell(self, z, y, x):
+        idx = self.flatten_coord(x, y, z)
+        if 0 <= idx < self.size:
+            if not self.board[idx].is_revealed:
+                self.board[idx].reveal()
 
+    def display_complete_board(self): # Reveals all the cells
+        for cell in self.board:
+            cell.reveal()
+
+    def clear_zeros(self, z, y, x):
+        idx = self.flatten_coord(x, y, z)
+        queue = deque([idx])
+        self.board[idx].set_reveal(False)
+
+        while queue:
+            curr_idx = queue.popleft()
+
+            if self.board[curr_idx].is_revealed:
+                continue
+            
+            self.board[curr_idx].reveal()
+            self.revealed_ctr += 1
+
+            if self.board[curr_idx].get_adj_mines() == 0:
+                for neighbor_idx in self.adj_map[curr_idx]:
+                    if not self.board[neighbor_idx].is_revealed:
+                        queue.append(neighbor_idx)
 
     def rotate(self, orient):
-        temp_arr = [[[None for _ in range(self._size)] for _ in range(self._size)] for _ in range(self._size)]
-        if orient == 'x': # x-rotation aka front rotation, col is fixed
-            
+        temp_arr = [None] * self.size
 
-            for layer in range(self._size):
-                for col in range(self._size):
-                    for row in range(self._size):
-                        temp_arr[layer][row][col] = self._board[row][self._size - 1 - layer][col]
+        for idx in range(self.size):
+            x = idx % self.dim
+            y = idx // self.dim % self.dim
+            z = idx // self.dim // self.dim
 
-        elif orient == 'y': # y-rotation aka side rotation
-            for layer in range(self._size):
-                for col in range(self._size):
-                    for row in range(self._size):
-                        temp_arr[layer][row][col] = self._board[col][row][self._size - 1 - layer]
+            if orient == 'x': # x-rotation aka front rotation, col is fixed
+                nz, ny, nx = y, (self.dim - 1 - z), x 
 
-        else: # z-rotation aka face rotation
+            elif orient == 'y': # y-rotation aka side rotation
+                nz, ny, nx = x, y, (self.dim - 1 - z)
 
-            for layer in range(self._size):
+            else: #  z-rotation aka face rotation
+                nz, ny, nx = z, x, (self.dim - 1 - y)
 
-                # Performing Transpose
-                for i in range(self._size):
-                    for j in range(i + 1, self._size):
-                        self._board[layer][i][j], self._board[layer][j][i] = self._board[layer][j][i], self._board[layer][i][j]
-
-                #Reversing Columns
-                for i in range(self._size):
-                    for j in range(self._size//2):
-                        self._board[layer][i][j], self._board[layer][i][self._size - 1 - j] = self._board[layer][i][self._size - 1 - j], self._board[layer][i][j]
-
-            return
+            new_idx = self.flatten_coord(nx, ny, nz)
+            temp_arr[new_idx] = self.board[idx]
         
-        for z in range(self._size):
-            for i in range(self._size):
-                for j in range(self._size):
-                    self._board[z][i][j] = temp_arr[z][i][j]
+        for idx in range(self.size):
+            self.board[idx] = temp_arr[idx]
 
         temp_arr = None #Clearing up memory
 
-
-
-    def reveal_cell(self, h, r, c):
-        if 0 <= h < self._size and 0 <= r < self._size and 0 <= c < self._size:
-            cell = self._board[h][r][c]
-            if not cell.is_revealed:
-                cell.reveal()
-
-
-
-    def display_complete_board(self): # Reveals all the cells
-        for i in range(self._size):
-            for j in range(self._size):
-                for k in range(self._size):
-                    self._board[i][j][k].reveal()
-
-
-
-    def clear_zeros(self, h, r, c):
-        queue = deque([(h, r, c)])
-        self._board[h][r][c].set_reveal(False)
-
-        while queue:
-            curr_h, curr_r, curr_c = queue.popleft()
-
-            if self._board[curr_h][curr_r][curr_c].is_revealed:
-                continue
-            
-            self._board[curr_h][curr_r][curr_c].reveal()
-
-            if self._board[curr_h][curr_r][curr_c].get_adj_mines() == 0:
-                for dh, dr, dc in self.OFFSETS:
-                    nh, nr, nc = curr_h + dh, curr_r + dr, curr_c + dc
-                    if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
-                        if not self._board[nh][nr][nc].is_revealed:
-                            queue.append((nh, nr, nc))
-
-
-
     def check_win(self):
-        for h in range(self._size):
-            for r in range(self._size):
-                for c in range(self._size):
-                    if (not self._board[h][r][c].get_is_mine()) and (not self._board[h][r][c].get_is_revealed()):
-                        return False
-        return True
+        return self.revealed_ctr == self.size - self.num_mines
 
-
-
-    def check_lose(self, curr_layer, r, c):
-
-        if self._board[curr_layer][r][c].get_is_mine() and self._board[curr_layer][r][c].get_is_revealed():
+    def check_lose(self, curr_layer, y, x):
+        idx = self.flatten_coord(x, y, curr_layer)
+        if self.board[idx].get_is_mine() and self.board[idx].get_is_revealed():
             return True
-        
         return False
-
 
     def find_external_revealed(self): #Used to find Unique external revealed cells
         external_layer = set()  # Store unique external revealed cells
-        for h in range(self._size):
-            for r in range(self._size):
-                for c in range(self._size):
-                    cell = self._board[h][r][c]
-                    if cell.get_is_revealed():
-                        for dh, dr, dc in self.OFFSETS:
-                            nh, nr, nc = h + dh, r + dr, c + dc
-                            # Check if adjacent cell is unrevealed and within bounds
-                            if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
-                                if not self._board[nh][nr][nc].get_is_revealed():
-                                    external_layer.add((h, r, c))
-                                    break  # Move to the next revealed cell
+        for idx in range(self.size):
+            cell = self.board[idx]
+            if cell.get_is_revealed():
+                for neighbor_idx in self.adj_map[idx]:
+                    # Check if adjacent cell is unrevealed
+                    if not self.board[neighbor_idx].get_is_revealed():
+                        external_layer.add(idx)
+                        break  # Move to the next revealed cell
         return external_layer
     
     def find_external_unrevealed(self): #Returns unique unrevealed outer layer, if they are not flagged
         external_layer = self.find_external_revealed()
 
         external_unrevealed = set()
-        for key in external_layer:
-            temp_set = set()
-            for dh, dr, dc in self.OFFSETS:
-                nh, nr, nc = key[0] + dh, key[1] + dr, key[2] + dc
-                if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
-                    if not self._board[nh][nr][nc].get_is_revealed() and not self._board[nh][nr][nc].get_is_flagged():
-                        temp_set.add((nh, nr, nc))
-                        external_unrevealed.add((nh, nr, nc))
+        for idx in external_layer:
+            for neighbor_idx in self.adj_map[idx]:
+                if not self.board[neighbor_idx].get_is_revealed() and not self.board[neighbor_idx].get_is_flagged():
+                    external_unrevealed.add(neighbor_idx)
 
-
-        return sorted(external_unrevealed) #Start from top layer, first row, first col. for layer -> for row -> for col
-
+        return sorted(external_unrevealed)
+    
     def get_total_nonlocal_unrevealed(self):
-        external_unrevealed = self.find_external_unrevealed()
+        external_unrevealed = set(self.find_external_unrevealed())
 
         nonlocal_unrevealed_cnt = 0
         nonlocal_unrevealed = set()
 
-        for h in range(self._size):
-            for r in range(self._size):
-                for c in range(self._size):
-                    cell = self._board[h][r][c]
-                    if not cell.get_is_revealed() and (h, r, c) not in external_unrevealed:
-                        nonlocal_unrevealed_cnt += 1
-                        nonlocal_unrevealed.add((h, r, c))
+        for idx in range(self.size):
+            cell = self.board[idx]
+            if not cell.get_is_revealed() and idx not in external_unrevealed:
+                nonlocal_unrevealed_cnt += 1
+                nonlocal_unrevealed.add(idx)
 
         return nonlocal_unrevealed_cnt, nonlocal_unrevealed
-    
 
+#==============AUTOSOLVER==============#
     async def find_possible_mine_layouts(self):
-        # Gather external unrevealed cells as potential mine candidates
         potential_cells = self.find_external_unrevealed()
-        layouts = []  # Store all valid layouts
+        layouts = []
         current_layout = {}
 
-        async def backtrack(index, num_mines):
+        async def backtrack(pos, mines_to_place):
 
-            if index == len(potential_cells):
+            if pos == len(potential_cells):
                 layouts.append(current_layout.copy())
-                print('added!')
                 return
 
+            idx = potential_cells[pos]
 
-            h, r, c = potential_cells[index]
+            # Case 1: Assume No Mine
+            current_layout[idx] = False
+            # Aggressive Pruning: Does this 'False' make a number impossible to satisfy?
+            if self.is_valid_configuration(current_layout, idx):
+                await backtrack(pos + 1, mines_to_place)
 
-            # Case 1: Assume no mine here
-            current_layout[(h, r, c)] = False
-            if self.is_valid_configuration(current_layout, (h, r, c)):
-                await backtrack(index + 1, num_mines)
+            # Case 2: Assume Mine
+            if mines_to_place > 0:
+                current_layout[idx] = True
+                # Aggressive Pruning: Does this 'True' exceed any revealed numbers?
+                if self.is_valid_configuration(current_layout, idx):
+                    await backtrack(pos + 1, mines_to_place - 1)
 
-            # Case 2: Assume a mine here
-            current_layout[(h, r, c)] = True
-            if self.is_valid_configuration(current_layout, (h, r, c)):
-                await backtrack(index + 1, num_mines - 1)
+            del current_layout[idx]
 
-            # Undo the assumption for backtracking
-            del current_layout[(h, r, c)]
-
-
-        # Initialize the backtracking process
-        await backtrack(0, self._num_mines)
+        await backtrack(0, self.num_mines)
         return layouts
 
-    def is_valid_configuration(self, layout, curr_pos):
-        h, r, c = curr_pos
+    def is_valid_configuration(self, layout, curr_idx):
+        # We check every revealed number touching the cell we just toggled
+        for neighbor_idx in self.adj_map[curr_idx]:
+            target_cell = self.board[neighbor_idx]
+            
+            if target_cell.get_is_revealed():
+                target_mines = target_cell.get_adj_mines()
+                
+                current_mines = 0
+                possible_future_mines = 0
 
-        for dh, dr, dc in self.OFFSETS:
-            nh, nr, nc = h + dh, r + dr, c + dc
-
-            if 0 <= nh < self._size and 0 <= nr < self._size and 0 <= nc < self._size:
-                cell = self._board[nh][nr][nc]
-                adj_mine_cnt = cell.get_adj_mines()
-                total_adj_unrevealed = 0
-                adj_referenced = 0
-                curr_adj_mines = 0
-
-                if cell.get_is_revealed():
-                    for adj_dh, adj_dr, adj_dc in self.OFFSETS:
-                        adj_nh, adj_nr, adj_nc = nh + adj_dh, nr + adj_dr, nc + adj_dc
-
-                        if 0 <= adj_nh < self._size and 0 <= adj_nr < self._size and 0 <= adj_nc < self._size:
-                            if not self._board[adj_nh][adj_nr][adj_nc].get_is_revealed():
-                                total_adj_unrevealed += 1
-
-                            if self._board[adj_nh][adj_nr][adj_nc].get_is_flagged(): #POSSIBLE EDGE CASE: MORE FLAGS THAN ACTUAL
-                                adj_mine_cnt -= 1
-
-                        if (adj_nh, adj_nr, adj_nc) in layout:
-                            adj_referenced += 1
-
-                            if layout[(adj_nh, adj_nr, adj_nc)]:
-                                curr_adj_mines += 1
-
-                    # Verify if this revealed cell's count matches the board's expected mine count
-                    if curr_adj_mines > adj_mine_cnt:
-                        return False
+                # Look at ALL neighbors of the revealed number
+                for n_idx in self.adj_map[neighbor_idx]:
+                    neighbor = self.board[n_idx]
                     
-                    elif total_adj_unrevealed - adj_referenced + curr_adj_mines < adj_mine_cnt:
-                        return False
+                    if neighbor.get_is_flagged():
+                        current_mines += 1
+                    elif n_idx in layout:
+                        if layout[n_idx]:
+                            current_mines += 1
+                    elif not neighbor.get_is_revealed():
+                        # This cell hasn't been assigned yet by the backtrack
+                        possible_future_mines += 1
+
+                # RULE 1: Too many mines already assigned/flagged
+                if current_mines > target_mines:
+                    return False
+                
+                # RULE 2 (Aggressive Pruning): 
+                # Even if every remaining unassigned cell is a mine, 
+                # we still can't reach the target number.
+                if current_mines + possible_future_mines < target_mines:
+                    return False
                 
         return True
 
-
     async def calc_probability(self):
-        #for nonlocal unrevealed, number of different combinations = nCr, where n is the number of nonlocal unrevealed and r is the number of mines
         layouts = await self.find_possible_mine_layouts()
+        if not layouts: return
+        
         total_poss_arr = 0
-
-        non_local_pos = set()
+        non_local_idx_list = set()
+        non_local_unrevealed_ctr, non_local_unrevealed_pos = self.get_total_nonlocal_unrevealed()
 
         for layout in layouts:
-            non_local_unrevealed, non_local_unrevealed_pos = self.get_total_nonlocal_unrevealed()
-
-            num_mines_left =  self._num_mines
-            for prob_mine in layout.values():
-                if prob_mine == True:
-                    num_mines_left -= 1
+            num_mines_left = self.num_mines - sum(layout.values())
 
             if num_mines_left < 0:
                 num_mines_left = 0
 
-            poss_arr = math.comb(non_local_unrevealed, num_mines_left)
+            poss_arr = math.comb(non_local_unrevealed_ctr, num_mines_left)
             total_poss_arr += poss_arr
 
-            for pos, prob_mine in layout.items():
-                if prob_mine == True:
-                    self._board[pos[0]][pos[1]][pos[2]].set_mine_prob(self._board[pos[0]][pos[1]][pos[2]].get_mine_prob() + poss_arr)
+            for idx, prob_mine in layout.items():
+                if prob_mine:
+                    self.board[idx].set_mine_prob(self.board[idx].get_mine_prob() + poss_arr)
 
-            if non_local_unrevealed:
-                if num_mines_left == 0:
-                    num_mines_left += 1
-                nonlocal_poss_ref = math.comb(non_local_unrevealed - 1, num_mines_left - 1)
+            if non_local_unrevealed_ctr > 0 and num_mines_left > 0:
+                nonlocal_poss_ref = math.comb(non_local_unrevealed_ctr - 1, num_mines_left - 1)
+                for idx in non_local_unrevealed_pos:
+                    self.board[idx].set_mine_prob(self.board[idx].get_mine_prob() + nonlocal_poss_ref)
+                    non_local_idx_list.add(idx)
 
-                for pos in non_local_unrevealed_pos:
-                    self._board[pos[0]][pos[1]][pos[2]].set_mine_prob(self._board[pos[0]][pos[1]][pos[2]].get_mine_prob() + nonlocal_poss_ref)
-                    non_local_pos.add(pos)
+        # Finalize probabilities
+        for idx in layouts[0].keys():
+            new_mine_prob = math.floor(100 - self.board[idx].get_mine_prob() / total_poss_arr * 100) / 100
+            self.board[idx].set_mine_prob(new_mine_prob)
 
-        
-        #Since all the different layouts have the same key, we only need the first layer
-        for pos in layouts[0].keys():
-            new_mine_prob = math.floor(100 - self._board[pos[0]][pos[1]][pos[2]].get_mine_prob() / total_poss_arr * 100) / 100
-
-            self._board[pos[0]][pos[1]][pos[2]].set_mine_prob(new_mine_prob)
-
-        if non_local_pos:
-            for pos in non_local_pos:
-                new_mine_prob = math.floor(100 - self._board[pos[0]][pos[1]][pos[2]].get_mine_prob() / total_poss_arr * 100) / 100
-
-                self._board[pos[0]][pos[1]][pos[2]].set_mine_prob(new_mine_prob)
-
+        for idx in non_local_idx_list:
+            new_mine_prob = math.floor(100 - self.board[idx].get_mine_prob() / total_poss_arr * 100) / 100
+            self.board[idx].set_mine_prob(new_mine_prob)
 
     def reset_probability(self):
-        for h in range(self._size):
-            for r in range(self._size):
-                for c in range(self._size):
-                    self._board[h][r][c].reset_mine_prob()
+        for idx in range(self.size):
+            self.board[idx].reset_mine_prob()
+
+ 
